@@ -1,11 +1,14 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 
-import './index.css';
+import Main from 'components/Main.jsx';
+
+import 'bootstrap/dist/css/bootstrap.css';
+import './index.css'
 
 window.onload = function() {
     ReactDOM.render(
-        <div>Hello React!!!</div>,
+        <Main/>,
         document.getElementById('root')
     );
 };
