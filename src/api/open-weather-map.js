@@ -3,6 +3,7 @@ import axios from 'axios';
 // TODO replace the key with yours
 const key = '36978c6550efee0e27e50850cc57adda';
 const baseUrl = `http://api.openweathermap.org/data/2.5/weather?appid=${key}`;
+const forecastBaseUrl = `http://api.openweathermap.org/data/2.5/forecast?appid=${key}`;
 
 export function getWeatherGroup(code) {
     let group = 'na';
@@ -62,7 +63,50 @@ export function cancelWeather() {
 }
 
 export function getForecast(city, unit) {
-    // TODO
+    var url = `${forecastBaseUrl}&q=${encodeURIComponent(city)}&units=${unit}`;
+
+    console.log(`Making Forecast request to: ${url}`);
+
+    const weekday = new Array(7);
+    weekday[0] = "Sun";
+    weekday[1] = "Mon";
+    weekday[2] = "Tue";
+    weekday[3] = "Wed";
+    weekday[4] = "Thu";
+    weekday[5] = "Fri";
+    weekday[6] = "Sat";
+
+    return axios.get(url, {cancelToken: weatherSource.token}).then(function(res) {
+        if (res.data.cod && res.data.list === 'undefined') {
+            throw new Error(res.data.message);
+        } else {
+            console.log("res.data =",res.data)
+            let offset = 0;
+            const listOfWeek = res.data.list.filter((value, index) => {
+                if (offset === index) {
+                    offset = offset + 8;
+                    const date = new Date(value.dt * 1000);
+                    value['weekday'] = weekday[date.getDay()];
+                    return value;
+                }
+            });
+            return {
+                city: capitalize(city),
+                listOfWeek: listOfWeek,
+                code: listOfWeek[0].weather[0].id,
+                group: getWeatherGroup(listOfWeek[0].weather[0].id),
+                description: listOfWeek[0].weather[0].description,
+                temp: listOfWeek[0].main.temp,
+                unit: unit // or 'imperial'
+            };
+        }
+    }).catch(function(err) {
+        if (axios.isCancel(err)) {
+            console.error(err.message, err);
+        } else {
+            throw err;
+        }
+    });
 }
 
 export function cancelForecast() {

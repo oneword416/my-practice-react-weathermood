@@ -15,7 +15,7 @@ import {
 } from 'reactstrap';
 
 import Today from 'components/Today.jsx';
-//import Forecast from 'components/Forecast.jsx';
+import Forecast from 'components/Forecast.jsx';
 
 import './Main.css';
 
