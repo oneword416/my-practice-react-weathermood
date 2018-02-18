@@ -5,8 +5,24 @@ import WeatherDisplay from 'components/WeatherDisplay.jsx';
 import WeatherTable from 'components/WeatherTable.jsx';
 import WeatherForm from 'components/WeatherForm.jsx';
 import {getForecast} from 'api/open-weather-map.js';
+import {getWeatherByCoord} from 'api/open-weather-map.js';
 
 import './weather.css';
+import './Forecast.css';
+
+import { withScriptjs, withGoogleMap, GoogleMap, Marker } from "react-google-maps"
+import _, {debounce} from 'lodash';
+
+const MyMapComponent = withScriptjs(withGoogleMap((props) =>
+    <GoogleMap
+        defaultZoom={8}
+        defaultCenter={{ lat: -34.397, lng: 150.644 }}
+        center = {{ lat: props.coords.lat, lng: props.coords.lng }}
+        onClick={ debounce((e) => {props.onMapClick(e)}, 1000) }
+        >
+        {props.isMarkerShown && <Marker position={{ lat: props.coords.lat, lng: props.coords.lng }} />}
+    </GoogleMap>
+))
 
 export default class Forecast extends React.Component {
     static propTypes = {
@@ -35,30 +51,55 @@ export default class Forecast extends React.Component {
         this.state = {
             ...Forecast.getInitWeatherState(),
             loading: true,
-            masking: true
+            masking: true,
+            coords: { lat: 0, lng: 0}
         };
 
         this.handleFormQuery = this.handleFormQuery.bind(this);
+        this.showPosition = this.showPosition.bind(this);
+        this.handleMapClick = this.handleMapClick.bind(this);
     }
 
     componentDidMount() {
-        this.getWeather('Hsinchu', 'metric');
+        //this.getWeather('Hsinchu', 'metric');
+        this.getLocation();
     }
 
     componentWillUnmount() {
-        if (this.state.loading) {
-            cancelWeather();
+        // if (this.state.loading) {
+        //     cancelWeather();
+        // }
+    }
+
+    getLocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(this.showPosition);
+        } else { 
+            console.log("Geolocation is not supported by this browser.");
         }
+    }
+    
+    showPosition(position) {
+        console.log("Latitude: " + position.coords.latitude + 
+        "<br>Longitude: " + position.coords.longitude);
+        this.getWeatherByCoord(position.coords.latitude, position.coords.longitude, 'metric')
+        this.setState({coords: {lat: position.coords.latitude, lng: position.coords.longitude}});
     }
 
     render() {
         return (
-            <div className={`today weather-bg ${this.state.group}`}>
-                <div className={`mask ${this.state.masking ? 'masking' : ''}`}>
-                    <WeatherDisplay {...this.state}/>
-                    <WeatherTable {...this.state}/>
-                    <WeatherForm city={this.state.city} unit={this.props.unit} onQuery={this.handleFormQuery}/>
-                </div>
+            <div className='forecast'>
+                <MyMapComponent 
+                    isMarkerShown
+                    googleMapURL="https://maps.googleapis.com/maps/api/js?v=3.exp&libraries=geometry,drawing,places"
+                    loadingElement={<div style={{ height: `100%` }} />}
+                    containerElement={<div style={{ height: `700px` }} />}
+                    mapElement={<div style={{ height: `100%` }} />}
+                    onMapClick={this.handleMapClick}
+                    coords = {this.state.coords}
+                />
+                <WeatherDisplay {...this.state}/>
+                <WeatherTable {...this.state}/>
             </div>
         );
     }
@@ -70,7 +111,6 @@ export default class Forecast extends React.Component {
             city: city // set city state immediately to prevent input text (in WeatherForm) from blinking;
         }, () => { // called back after setState completes
             getForecast(city, unit).then(weather => {
-                console.log("weather = ",weather)
                 this.setState({
                     ...weather,
                     loading: false
@@ -92,6 +132,32 @@ export default class Forecast extends React.Component {
         }, 600);
     }
 
+    getWeatherByCoord(lat, lng, unit) {
+        this.setState({
+            loading: true,
+            masking: true,     
+        }, () => {
+            getForecast(lat, lng, unit).then(weather => {
+                this.setState({
+                    ...weather,
+                    loading: false
+                }, () => this.notifyUnitChange(unit));                
+            }).catch(err => {
+                console.error('Error getting weather', err);
+                
+                this.setState({
+                    ...Today.getInitWeatherState(unit),
+                    loading: false
+                }, () => this.notifyUnitChange(unit));
+            });
+        });
+        setTimeout(() => {
+            this.setState({
+                masking: false
+            });
+        }, 600);
+    }
+
     handleFormQuery(city, unit) {
         this.getWeather(city, unit);
     }
@@ -100,5 +166,9 @@ export default class Forecast extends React.Component {
         if (this.props.units !== unit) {
             this.props.onUnitChange(unit);
         }
+    }
+
+    handleMapClick(e) {
+        this.getWeatherByCoord(e.latLng.lat(), e.latLng.lng(), 'metric')
     }
 }

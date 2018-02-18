@@ -22,11 +22,11 @@ export default class WeatherTable extends React.Component {
         return (
         <Table>
             <thead>
-            <tr>{this.props.listOfWeek.map(item => <th key={item.dt}>{item.weekday}</th>)}
-            </tr>
+                <tr>{this.props.listOfWeek.map(item => <th key={item.dt}>{item.weekday}</th>)}
+                </tr>
             </thead>
             <tbody>
-            <tr>{this.props.listOfWeek.map(item => <td key={item.dt}><i className={`owf owf-${item.weather[0].id}`}></i></td>)}</tr>
+                <tr>{this.props.listOfWeek.map(item => <td key={item.dt}><i className={`owf owf-${item.weather[0].id}`}></i></td>)}</tr>
             </tbody>
         </Table>
         );
