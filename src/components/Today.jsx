@@ -18,6 +18,7 @@ import {
 import WeatherDisplay from 'components/WeatherDisplay.jsx';
 import WeatherForm from 'components/WeatherForm.jsx';
 import {getWeather} from 'api/open-weather-map.js';
+import {getWeatherByCoord} from 'api/open-weather-map.js';
 
 import './weather.css';
 
@@ -46,23 +47,39 @@ export default class Today extends React.Component {
         this.state = {
             ...Today.getInitWeatherState(),
             loading: true,
-            masking: true
+            masking: true,
         };
 
         this.handleFormQuery = this.handleFormQuery.bind(this);
+        this.showPosition = this.showPosition.bind(this);
     }
 
     componentDidMount() {
-        this.getWeather('Hsinchu', 'metric');
+        // this.getWeather('Hsinchu', 'metric');
+        this.getLocation();
+    }
+
+    getLocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(this.showPosition);
+        } else { 
+            console.log("Geolocation is not supported by this browser.");
+        }
+    }
+    
+    showPosition(position) {
+        console.log("Latitude: " + position.coords.latitude + 
+        "<br>Longitude: " + position.coords.longitude);
+        this.getWeatherByCoord(position.coords.latitude, position.coords.longitude, 'metric')
     }
 
     componentWillUnmount() {
-        if (this.state.loading) {
-            cancelWeather();
-        }
+        // if (this.state.loading) {
+        //     cancelWeather();
+        // }
     }
 
-    render() {
+    render() {        
         return (
             <div className={`today weather-bg ${this.state.group}`}>
                 <div className={`mask ${this.state.masking ? 'masking' : ''}`}>
@@ -94,6 +111,32 @@ export default class Today extends React.Component {
             });
         });
 
+        setTimeout(() => {
+            this.setState({
+                masking: false
+            });
+        }, 600);
+    }
+
+    getWeatherByCoord(lat, lng, unit) {
+        this.setState({
+            loading: true,
+            masking: true,     
+        }, () => {
+            getWeatherByCoord(lat, lng, unit).then(weather => {
+                this.setState({
+                    ...weather,
+                    loading: false
+                }, () => this.notifyUnitChange(unit));                
+            }).catch(err => {
+                console.error('Error getting weather', err);
+                
+                this.setState({
+                    ...Today.getInitWeatherState(unit),
+                    loading: false
+                }, () => this.notifyUnitChange(unit));
+            });
+        });
         setTimeout(() => {
             this.setState({
                 masking: false
