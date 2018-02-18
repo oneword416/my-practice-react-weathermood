@@ -58,12 +58,35 @@ export function getWeather(city, unit) {
     });
 }
 
+export function getWeatherByCoord(lat, lon, unit) {
+    var url = `${baseUrl}&lat=${lat}&lon=${lon}&units=${unit}`;
+
+    console.log(`Making request to: ${url}`);
+
+    return axios.get(url, {cancelToken: weatherSource.token}).then(res => {
+        return {
+                code: res.data.weather[0].id,
+                group: getWeatherGroup(res.data.weather[0].id),
+                description: res.data.weather[0].description,
+                temp: res.data.main.temp,
+                city: res.data.name,
+                unit: unit // or 'imperial'
+        };
+    }).catch(err => {
+        if (axios.isCancel(err)) {
+            console.error(err.message, err);
+        } else {
+            throw err;
+        }        
+    });
+}
+
 export function cancelWeather() {
     weatherSource.cancel('Request canceled');
 }
 
-export function getForecast(city, unit) {
-    var url = `${forecastBaseUrl}&q=${encodeURIComponent(city)}&units=${unit}`;
+export function getForecast(lat, lon, unit) {
+    var url = `${forecastBaseUrl}&lat=${lat}&lon=${lon}&units=${unit}`;
 
     console.log(`Making Forecast request to: ${url}`);
 
@@ -91,7 +114,7 @@ export function getForecast(city, unit) {
                 }
             });
             return {
-                city: capitalize(city),
+                city: capitalize(res.data.city.name),
                 listOfWeek: listOfWeek,
                 code: listOfWeek[0].weather[0].id,
                 group: getWeatherGroup(listOfWeek[0].weather[0].id),
@@ -112,3 +135,4 @@ export function getForecast(city, unit) {
 export function cancelForecast() {
     // TODO
 }
+
