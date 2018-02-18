@@ -37,8 +37,8 @@ export default class Main extends React.Component {
             <Router>
                 <div className={`main bg-faded ${this.state.group}`}>
                     <div className='container'>
-                        <Navbar color="faded" light toggleable>
-                            <NavbarToggler right onClick={this.handleNavbarToggle}/>
+                        <Navbar color="faded" light>
+                            <NavbarToggler onClick={this.handleNavbarToggle}/>
                             <NavbarBrand className='text-info' href="/">WeatherMood</NavbarBrand>
                             <Collapse isOpen={this.state.navbarToggle} navbar>
                                 <Nav navbar>
